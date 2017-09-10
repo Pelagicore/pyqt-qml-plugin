@@ -1,0 +1,2 @@
+- Make it possible to dynamically configure which Python module(s) to load.
+- Extend the integration to allow the registration of types from Python.

@@ -1,0 +1,83 @@
+PyQt to QML plugin bridge
+Copyright (C) 2013 Johan Thelin / Pelagicore AB
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+
+Table of Contents
+
+1. Introduction
+2. Building
+3. Usage
+
+
+
+1. Introduction
+
+The pyqt-qml-plugin is a plugin that acts as a bridge between PyQt and QML, when the QML application is driven from a separate run-time. You can use objects implemented in Python from QML, regardless of the technology used to implement the run-time. This means that you can mix C++ and Python in new and interesting ways.
+
+
+
+2. Building
+
+The pyqt-qml-plugin is built using qmake and depens on python and Qt. It has been tested with Python 2.7 and Qt 5.0. To build, simply run:
+
+  qmake && make
+
+You will have to install the resulting library and qmldir file on your system manually.
+
+
+
+3. Usage
+
+The pyqt-qml-plugin implements a QML plugin extension, QQmlExtensionPlugin. The plugin loads a Python module named pluginmodule. The name is controlled through the MODULE_NAME define found at the top of the pyqt-qml-plugin.cpp file. The plugin implements a Python interpreter and exposes the module PyQtQmlBridge with the single method registerObject. This method registers a given object in the root context of the QQmlEngine for which the plugin is loaded.
+
+To register an object from Python, import the PyQtQmlBridge module, instantiate the object(s) and register the unwrapped pointer to them.
+
+ import PyQt5.QtCore, sip, PyQtQmlBridge
+
+ class MyClass(PyQt5.QtCore.QObject):
+     def __init__(self, name):
+         PyQt5.QtCore.QObject.__init__(self)
+         self.__name = name;
+
+     @PyQt5.QtCore.pyqtSlot(str)
+     def mySlot(self, text):
+         print self.__name + ".mySlot: " + text
+
+ foo = MyClass("foo")
+ bar = MyClass("bar")
+
+ def initializeRootContext():
+     PyQtQmlBridge.registerObject("foo", sip.unwrapinstance(foo))
+     PyQtQmlBridge.registerObject("bar", sip.unwrapinstance(bar))
+
+From QML, the registered objects are available from the root context as soon as com.pelagicore.PyQtQmlBridge is imported, so the following piece of JavaScript works nicely:
+
+ import QtQuick 2.0
+ import com.pelagicore.PyQtQmlBridge 1.0
+
+ Item {
+     width: 400
+     height: 400
+    
+     Component.onCompleted: {
+         foo.mySlot("foo");          // Calls the slots
+         bar.mySlot("bar");
+         console.log("foo: " + foo); // Prints the pointer to the object instance
+         console.log("bar: " + bar);
+     }
+ }
